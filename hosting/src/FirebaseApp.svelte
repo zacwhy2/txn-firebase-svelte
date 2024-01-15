@@ -7,6 +7,15 @@
     signInWithRedirect,
     signOut,
   } from "firebase/auth"
+  import {
+    addDoc,
+    collection,
+    deleteDoc,
+    doc,
+    getFirestore,
+    onSnapshot,
+    setDoc,
+  } from "firebase/firestore"
   import { firebaseConfig } from "./lib/firebaseConfig"
 
   const fromOptions = ["cash", "card"]
@@ -14,13 +23,25 @@
 
   const app = initializeApp(firebaseConfig)
   const auth = getAuth()
+  const db = getFirestore()
 
   let currentUser
   let currentTxn
   let isModalOpen = false
+  let unsubscribeOnSnapshot
+  let txns = []
 
   onAuthStateChanged(auth, user => {
     currentUser = user
+    if (!currentUser) {
+      if (unsubscribeOnSnapshot) {
+        unsubscribeOnSnapshot()
+      }
+    } else {
+      unsubscribeOnSnapshot = onSnapshot(collection(db, "txns"), snapshot => {
+        txns = snapshot.docs.map(d => ({id: d.id, ...d.data()}))
+      })
+    }
   })
 
   function login() {
@@ -37,8 +58,42 @@
     openModal()
   }
 
+  function editTxn(txn) {
+    currentTxn = txn
+    openModal()
+  }
+
   function saveTxn() {
     console.log("currentTxn", currentTxn)
+    if (!currentTxn.id) { // new txn
+      addDoc(collection(db, "txns"), {
+        date: currentTxn.date,
+        amount: currentTxn.amount,
+        from: currentTxn.from,
+        to: currentTxn.to,
+        description: currentTxn.description,
+      }).then(docRef => {
+        console.log("Document written with ID: ", docRef.id)
+      })
+    } else { // existing txn
+      setDoc(doc(db, "txns", currentTxn.id), {
+        date: currentTxn.date,
+        amount: currentTxn.amount,
+        from: currentTxn.from,
+        to: currentTxn.to,
+        description: currentTxn.description,
+      }).then(() => {
+        console.log("edited", currentTxn.id)
+      })
+    }
+    closeModal()
+  }
+
+  function deleteTxn() {
+    deleteDoc(doc(db, "txns", currentTxn.id)).then(() => {
+      console.log("deleted", currentTxn.id)
+    })
+    closeModal()
   }
 
   function openModal() {
@@ -67,6 +122,22 @@
           <span>New</span>
         </button>
       </div>
+      {#each txns as txn}
+        <div class="block">
+          <button on:click={() => editTxn(txn)} class="button is-small is-info is-rounded">
+            <span class="icon is-small">
+              <i class="fas fa-pen"></i>
+            </span>
+          </button>
+          <span class="tag is-link is-light">{txn.date}</span>
+          <span class="tag is-warning is-light">${txn.amount}</span>
+          <span class="tag is-danger is-light">{txn.from}</span>
+          <span class="tag is-info is-light">{txn.to}</span>
+          <span class="tag is-primary is-light">{txn.description}</span>
+        </div>
+      {:else}
+        <div class="box">No records</div>
+      {/each}
     </div>
   </section>
 {/if}
