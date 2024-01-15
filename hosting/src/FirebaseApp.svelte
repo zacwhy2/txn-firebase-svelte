@@ -31,6 +31,8 @@
   let unsubscribeOnSnapshot
   let txns = []
 
+  const errors = {}
+
   onAuthStateChanged(auth, user => {
     currentUser = user
     if (!currentUser) {
@@ -65,6 +67,18 @@
 
   function saveTxn() {
     console.log("currentTxn", currentTxn)
+
+    errors.amount = !currentTxn.amount
+    errors.from = !currentTxn.from
+    errors.to = !currentTxn.to
+    errors.description = !currentTxn.description
+    errors.date = !currentTxn.date
+
+    const hasErrors = Object.entries(errors).some(([_, value]) => value)
+    if (hasErrors) {
+      return
+    }
+
     if (!currentTxn.id) { // new txn
       addDoc(collection(db, "txns"), {
         date: currentTxn.date,
@@ -101,6 +115,12 @@
   }
 
   function closeModal() {
+    errors.amount = false
+    errors.from = false
+    errors.to = false
+    errors.description = false
+    errors.date = false
+
     isModalOpen = false
   }
 
@@ -169,14 +189,22 @@
               <a class="button is-static">$</a>
             </div>
             <div class="control">
-              <input bind:value={currentTxn.amount} type="number" class="input" placeholder="amount" />
+              <input bind:value={currentTxn.amount}
+                type="number"
+                placeholder="amount"
+                class="input"
+                class:is-danger={errors.amount}
+              />
             </div>
           </div>
+          {#if errors.amount}
+            <p class="help is-danger">Amount is required</p>
+          {/if}
         </div>
         <div class="field">
           <label class="label">From</label>
           <div class="control">
-            <div class="select">
+            <div class="select" class:is-danger={errors.from}>
               <select bind:value={currentTxn.from}>
                 <option></option>
                 {#each fromOptions as fromOption}
@@ -185,11 +213,14 @@
               </select>
             </div>
           </div>
+          {#if errors.from}
+            <p class="help is-danger">From is required</p>
+          {/if}
         </div>
         <div class="field">
           <label class="label">To</label>
           <div class="control">
-            <div class="select">
+            <div class="select" class:is-danger={errors.to}>
               <select bind:value={currentTxn.to}>
                 <option></option>
                 {#each toOptions as toOption}
@@ -198,18 +229,36 @@
               </select>
             </div>
           </div>
+          {#if errors.from}
+            <p class="help is-danger">To is required</p>
+          {/if}
         </div>
         <div class="field">
           <label class="label">Description</label>
           <div class="control">
-            <input bind:value={currentTxn.description} class="input" placeholder="description" />
+            <input bind:value={currentTxn.description}
+              placeholder="description"
+              class="input"
+              class:is-danger={errors.description}
+            />
           </div>
+          {#if errors.description}
+            <p class="help is-danger">Description is required</p>
+          {/if}
         </div>
         <div class="field">
           <label class="label">Date</label>
           <div class="control">
-            <input bind:value={currentTxn.date} type="date" class="input" placeholder="Date" />
+            <input bind:value={currentTxn.date}
+              type="date"
+              placeholder="Date"
+              class="input"
+              class:is-danger={errors.date}
+            />
           </div>
+          {#if errors.date}
+            <p class="help is-danger">Date is required</p>
+          {/if}
         </div>
       </section>
       <footer class="modal-card-foot">
