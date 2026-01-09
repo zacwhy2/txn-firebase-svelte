@@ -18,7 +18,7 @@
   } from "firebase/firestore"
   import { firebaseConfig } from "./lib/firebaseConfig"
 
-  const fromOptions = ["cash", "card"]
+  const fromOptions = ["cash", "card", "card2"]
   const toOptions = ["breakfast", "lunch", "dinner"]
 
   const app = initializeApp(firebaseConfig)
