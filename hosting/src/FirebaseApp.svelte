@@ -4,8 +4,10 @@
     onAuthStateChanged,
     getAuth,
     GoogleAuthProvider,
-    signInWithRedirect,
+    signInWithPopup,
+    // signInWithRedirect,
     signOut,
+    type User,
   } from "firebase/auth"
   import {
     addDoc,
@@ -15,8 +17,11 @@
     getFirestore,
     onSnapshot,
     setDoc,
+    type Unsubscribe,
   } from "firebase/firestore"
   import { firebaseConfig } from "./lib/firebaseConfig"
+  import Txn from "./lib/Txn";
+  import TxnErrors from "./lib/TxnErrors"
 
   const fromOptions = ["cash", "card", "card2"]
   const toOptions = ["breakfast", "lunch", "dinner"]
@@ -25,29 +30,57 @@
   const auth = getAuth()
   const db = getFirestore()
 
-  let currentUser
-  let currentTxn
+  let currentUser: User | null = null
+  let currentDate = new Date().toLocaleDateString('en-CA')
+  let currentTxn: Txn | null = null
   let isModalOpen = false
-  let unsubscribeOnSnapshot
-  let txns = []
+  let unsubscribeOnSnapshot: Unsubscribe | null
+  let txns: Txn[] = []
 
-  const errors = {}
+  const errors = new TxnErrors()
+
+  function subscribeToDate(date: string) {
+    if (!currentUser) return
+    if (unsubscribeOnSnapshot) {
+      unsubscribeOnSnapshot()
+      unsubscribeOnSnapshot = null
+    }
+    const colRef = collection(db, "txns", "users", currentUser.uid, "dates", date)
+    unsubscribeOnSnapshot = onSnapshot(colRef, snapshot => {
+      txns = snapshot.docs.map(d => ({ id: d.id, ...(d.data() as any) })) as Txn[]
+    })
+  }
+
+  function changeDate(delta: number) {
+    const d = new Date(currentDate + "T00:00:00")
+    d.setDate(d.getDate() + delta)
+    currentDate = d.toLocaleDateString("en-CA")
+    if (currentUser) {
+      subscribeToDate(currentDate)
+    }
+  }
 
   onAuthStateChanged(auth, user => {
     currentUser = user
-    if (!currentUser) {
-      if (unsubscribeOnSnapshot) {
-        unsubscribeOnSnapshot()
-      }
+    if (unsubscribeOnSnapshot) {
+      unsubscribeOnSnapshot()
+      unsubscribeOnSnapshot = null
+    }
+    if (currentUser) {
+      subscribeToDate(currentDate)
     } else {
-      unsubscribeOnSnapshot = onSnapshot(collection(db, "txns"), snapshot => {
-        txns = snapshot.docs.map(d => ({id: d.id, ...d.data()}))
-      })
+      txns = []
     }
   })
 
   function login() {
-    signInWithRedirect(auth, new GoogleAuthProvider())
+    signInWithPopup(auth, new GoogleAuthProvider())
+
+    /*
+     * signInWithRedirect is not signing in (need to use signInWithPopup instead)
+     * https://www.reddit.com/r/Firebase/comments/1doskev/signinwithredirect_is_not_signing_in_but/
+     */
+    // signInWithRedirect(auth, new GoogleAuthProvider())
   }
 
   function logout() {
@@ -55,12 +88,12 @@
   }
 
   function newTxn() {
-    currentTxn = {}
+    currentTxn = new Txn()
     currentTxn.date = new Date().toLocaleDateString('en-CA')
     openModal()
   }
 
-  function editTxn(txn) {
+  function editTxn(txn: Txn) {
     currentTxn = txn
     openModal()
   }
@@ -68,19 +101,24 @@
   function saveTxn() {
     console.log("currentTxn", currentTxn)
 
-    errors.amount = !currentTxn.amount
-    errors.from = !currentTxn.from
-    errors.to = !currentTxn.to
-    errors.description = !currentTxn.description
-    errors.date = !currentTxn.date
+    if (!currentTxn) {
+      console.error("saveTxn: currentTxn is null")
+      return
+    }
 
-    const hasErrors = Object.entries(errors).some(([_, value]) => value)
+    const hasErrors = errors.validate(currentTxn)
     if (hasErrors) {
       return
     }
 
+    if (!currentUser) {
+      console.error("saveTxn: no authenticated user")
+      return
+    }
+    const uid = currentUser.uid
+
     if (!currentTxn.id) { // new txn
-      addDoc(collection(db, "txns"), {
+      addDoc(collection(db, "txns", "users", uid, "dates", currentTxn.date), {
         date: currentTxn.date,
         amount: currentTxn.amount,
         from: currentTxn.from,
@@ -104,6 +142,11 @@
   }
 
   function deleteTxn() {
+    if (!currentTxn || !currentTxn.id) {
+      console.error("deleteTxn: no currentTxn or id")
+      closeModal()
+      return
+    }
     deleteDoc(doc(db, "txns", currentTxn.id)).then(() => {
       console.log("deleted", currentTxn.id)
     })
@@ -115,12 +158,7 @@
   }
 
   function closeModal() {
-    errors.amount = false
-    errors.from = false
-    errors.to = false
-    errors.description = false
-    errors.date = false
-
+    errors.reset()
     isModalOpen = false
   }
 
@@ -135,12 +173,11 @@
   <section class="section">
     <div class="container">
       <div class="block">
-        <button on:click={newTxn} class="button is-primary is-rounded">
-          <span class="icon is-small">
-            <i class="fas fa-plus"></i>
-          </span>
-          <span>New</span>
-        </button>
+        <div>
+          <button on:click={() => changeDate(-1)}>&lt;</button>
+          {currentDate}
+          <button on:click={() => changeDate(1)}>&gt;</button>
+        </div>
       </div>
       {#each txns as txn}
         <div class="block">
@@ -149,7 +186,6 @@
               <i class="fas fa-pen"></i>
             </span>
           </button>
-          <span class="tag is-link is-light">{txn.date}</span>
           <span class="tag is-warning is-light">${txn.amount}</span>
           <span class="tag is-danger is-light">{txn.from}</span>
           <span class="tag is-info is-light">{txn.to}</span>
@@ -158,6 +194,13 @@
       {:else}
         <div class="box">No records</div>
       {/each}
+      <div class="block">
+        <button on:click={newTxn} class="button is-primary is-rounded">
+          <span class="icon is-small">
+            <i class="fas fa-plus"></i>
+          </span>
+        </button>
+      </div>
     </div>
   </section>
 {/if}
@@ -247,9 +290,9 @@
           {/if}
         </div>
         <div class="field">
-          <label class="label">Date</label>
+          <label class="label" for="txn-date">Date</label>
           <div class="control">
-            <input bind:value={currentTxn.date}
+            <input id="txn-date" bind:value={currentTxn.date}
               type="date"
               placeholder="Date"
               class="input"
