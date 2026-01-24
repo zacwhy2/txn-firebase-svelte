@@ -23,9 +23,6 @@
   import Txn from "./lib/Txn";
   import TxnErrors from "./lib/TxnErrors"
 
-  const fromOptions = ["cash", "card", "card2"]
-  const toOptions = ["breakfast", "lunch", "dinner"]
-
   const app = initializeApp(firebaseConfig)
   const auth = getAuth()
   const db = getFirestore()
@@ -34,8 +31,13 @@
   let currentDate = new Date().toLocaleDateString('en-CA')
   let currentTxn: Txn | null = null
   let isModalOpen = false
-  let unsubscribeOnSnapshot: Unsubscribe | null
   let txns: Txn[] = []
+  let fromOptions: string[] = []
+  let toOptions: string[] = []
+
+  let unsubscribeOnSnapshot: Unsubscribe | null
+  let unsubscribeFromOptions: Unsubscribe | null = null
+  let unsubscribeToOptions: Unsubscribe | null = null
 
   const errors = new TxnErrors()
 
@@ -48,6 +50,16 @@
     const colRef = collection(db, "txns", "users", currentUser.uid, "dates", date)
     unsubscribeOnSnapshot = onSnapshot(colRef, snapshot => {
       txns = snapshot.docs.map(d => ({ id: d.id, ...(d.data() as any) })) as Txn[]
+    })
+
+    const fromColRef = collection(db, "txns", "users", currentUser.uid, "options", "from")
+    unsubscribeFromOptions = onSnapshot(fromColRef, snapshot => {
+      fromOptions = snapshot.docs.map(doc => doc.id)
+    })
+
+    const toColRef = collection(db, "txns", "users", currentUser.uid, "options", "to")
+    unsubscribeToOptions = onSnapshot(toColRef, snapshot => {
+      toOptions = snapshot.docs.map(doc => doc.id)
     })
   }
 
@@ -66,6 +78,17 @@
       unsubscribeOnSnapshot()
       unsubscribeOnSnapshot = null
     }
+
+    if (unsubscribeFromOptions) {
+      unsubscribeFromOptions()
+      unsubscribeFromOptions = null
+    }
+
+    if (unsubscribeToOptions) {
+      unsubscribeToOptions()
+      unsubscribeToOptions = null
+    }
+
     if (currentUser) {
       subscribeToDate(currentDate)
     } else {
