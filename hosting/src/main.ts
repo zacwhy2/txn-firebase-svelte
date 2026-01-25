@@ -1,7 +1,10 @@
+import { mount } from 'svelte'
 import App from './FirebaseApp.svelte'
 
-const app = new App({
-  target: document.getElementById('app'),
-})
+const target = document.getElementById('app');
 
-export default app
+if (!target) {
+  throw new Error("Target element with id 'app' not found");
+}
+
+mount(App, { target });
