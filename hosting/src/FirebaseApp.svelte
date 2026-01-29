@@ -159,7 +159,7 @@
         to: currentTxn.to,
         description: currentTxn.description,
       }).then(() => {
-        console.log("edited", currentTxn.id)
+        // console.log("edited", currentTxn.id)
       })
     }
     closeModal()
@@ -172,7 +172,7 @@
       return
     }
     deleteDoc(doc(db, "txns", currentTxn.id)).then(() => {
-      console.log("deleted", currentTxn.id)
+      // console.log("deleted", currentTxn.id)
     })
     closeModal()
   }
