@@ -32,7 +32,7 @@
 
 {#if currentTxn}
   <div class="modal" class:is-active={isModalOpen}>
-    <div on:click={closeModal} class="modal-background"></div>
+    <div on:click={closeModal} on:keydown={onKeyDown} role="button" tabindex="0" class="modal-background"></div>
     <div class="modal-card">
       <header class="modal-card-head">
         <p class="modal-card-title">Txn</p>
@@ -40,13 +40,13 @@
       </header>
       <section class="modal-card-body">
         <div class="field">
-          <label class="label">Amount</label>
+          <label class="label" for="txn-amount">Amount</label>
           <div class="field has-addons">
             <div class="control">
-              <a class="button is-static">$</a>
+              <span class="button is-static">$</span>
             </div>
             <div class="control">
-              <input bind:value={currentTxn.amount}
+              <input id="txn-amount" bind:value={currentTxn.amount}
                 type="number"
                 placeholder="amount"
                 class="input"
@@ -59,10 +59,10 @@
           {/if}
         </div>
         <div class="field">
-          <label class="label">From</label>
+          <label class="label" for="txn-from">From</label>
           <div class="control">
             <div class="select" class:is-danger={errors.from}>
-              <select bind:value={currentTxn.from}>
+              <select id="txn-from" bind:value={currentTxn.from}>
                 <option></option>
                 {#each fromOptions as fromOption}
                   <option>{fromOption}</option>
@@ -75,10 +75,10 @@
           {/if}
         </div>
         <div class="field">
-          <label class="label">To</label>
+          <label class="label" for="txn-to">To</label>
           <div class="control">
             <div class="select" class:is-danger={errors.to}>
-              <select bind:value={currentTxn.to}>
+              <select id="txn-to" bind:value={currentTxn.to}>
                 <option></option>
                 {#each toOptions as toOption}
                   <option>{toOption}</option>
@@ -91,9 +91,9 @@
           {/if}
         </div>
         <div class="field">
-          <label class="label">Description</label>
+          <label class="label" for="txn-description">Description</label>
           <div class="control">
-            <input bind:value={currentTxn.description}
+            <input id="txn-description" bind:value={currentTxn.description}
               placeholder="description"
               class="input"
               class:is-danger={errors.description}

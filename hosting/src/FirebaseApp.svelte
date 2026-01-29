@@ -230,7 +230,7 @@
       </div>
       {#each txns as txn}
         <div class="block">
-          <button on:click={() => editTxn(txn)} class="button is-small is-info is-rounded">
+          <button on:click={() => editTxn(txn)} class="button is-small is-info is-rounded" aria-label="Edit transaction">
             <span class="icon is-small">
               <i class="fas fa-pen"></i>
             </span>
@@ -244,7 +244,7 @@
         <div class="box">No records</div>
       {/each}
       <div class="block">
-        <button on:click={newTxn} class="button is-primary is-rounded">
+        <button on:click={newTxn} class="button is-primary is-rounded" aria-label="Add new transaction">
           <span class="icon is-small">
             <i class="fas fa-plus"></i>
           </span>
@@ -259,7 +259,7 @@
     {#if !currentUser}
       <button on:click={login} class="button is-small is-light">Log in</button>
     {:else}
-      <button on:click={openOptionsModal} class="button is-small is-info is-rounded">
+      <button on:click={openOptionsModal} class="button is-small is-info is-rounded" aria-label="Open options">
         <span class="icon is-small">
           <i class="fas fa-cog"></i>
         </span>

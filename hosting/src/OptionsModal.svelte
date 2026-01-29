@@ -28,7 +28,7 @@
 </script>
 
 <div class="modal" class:is-active={isModalOpen}>
-  <div on:click={closeModal} class="modal-background"></div>
+  <button type="button" on:click={closeModal} class="modal-background" aria-label="Close modal" tabindex="0"></button>
   <div class="modal-card">
     <header class="modal-card-head">
       <p class="modal-card-title">Add Option</p>
@@ -36,10 +36,10 @@
     </header>
     <section class="modal-card-body">
       <div class="field">
-        <label class="label">Type</label>
+        <label class="label" for="option-type-select">Type</label>
         <div class="control">
           <div class="select">
-            <select bind:value={optionType}>
+            <select id="option-type-select" bind:value={optionType}>
               <option value="from">From</option>
               <option value="to">To</option>
             </select>
@@ -47,9 +47,10 @@
         </div>
       </div>
       <div class="field">
-        <label class="label">Value</label>
+        <label class="label" for="option-value-input">Value</label>
         <div class="control">
           <input
+            id="option-value-input"
             bind:value={optionValue}
             placeholder="e.g., Cash, Bank, Wallet"
             class="input"
