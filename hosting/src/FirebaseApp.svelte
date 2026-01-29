@@ -23,6 +23,7 @@
   import Txn from "./lib/Txn";
   import TxnErrors from "./lib/TxnErrors"
   import TxnModal from "./TxnModal.svelte"
+  import OptionsModal from "./OptionsModal.svelte"
 
   const app = initializeApp(firebaseConfig)
   const auth = getAuth()
@@ -32,6 +33,7 @@
   let currentDate = new Date().toLocaleDateString('en-CA')
   let currentTxn: Txn | null = null
   let isModalOpen = false
+  let isOptionsModalOpen = false
   let txns: Txn[] = []
   let fromOptions: string[] = []
   let toOptions: string[] = []
@@ -185,6 +187,35 @@
     errors.reset()
     isModalOpen = false
   }
+
+  function openOptionsModal() {
+    isOptionsModalOpen = true
+  }
+
+  function closeOptionsModal() {
+    isOptionsModalOpen = false
+  }
+
+  function saveOption(type: string, value: string) {
+    if (!currentUser) {
+      console.error("saveOption: no authenticated user")
+      return
+    }
+    const uid = currentUser.uid
+
+    const collectionPath = type === "from"
+      ? `txns/users/${uid}/options/from`
+      : `txns/users/${uid}/options/to`
+
+    setDoc(doc(db, collectionPath, value), {
+      name: value
+    }).then(() => {
+      console.log("Option saved:", value)
+      closeOptionsModal()
+    }).catch((error) => {
+      console.error("Error saving option:", error)
+    })
+  }
 </script>
 
 {#if currentUser}
@@ -228,6 +259,12 @@
     {#if !currentUser}
       <button on:click={login} class="button is-small is-light">Log in</button>
     {:else}
+      <button on:click={openOptionsModal} class="button is-small is-info is-rounded">
+        <span class="icon is-small">
+          <i class="fas fa-cog"></i>
+        </span>
+      </button>
+
       Logged in as <b>{currentUser.email}</b>
       <button on:click={logout} class="button is-small is-light">Log out</button>
     {/if}
@@ -243,4 +280,10 @@
   onSave={saveTxn}
   onDelete={deleteTxn}
   onClose={closeModal}
+/>
+
+<OptionsModal
+  isModalOpen={isOptionsModalOpen}
+  onSave={saveOption}
+  onClose={closeOptionsModal}
 />
