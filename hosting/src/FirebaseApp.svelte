@@ -154,7 +154,7 @@
         console.log("Document written with ID: ", docRef.id)
       })
     } else { // existing txn
-      setDoc(doc(db, "txns", currentTxn.id), {
+      setDoc(doc(db, "txns", "users", uid, "dates", currentTxn.date, currentTxn.id), {
         date: currentTxn.date,
         amount: currentTxn.amount,
         from: currentTxn.from,
@@ -168,12 +168,17 @@
   }
 
   function deleteTxn() {
+    if (!currentUser) {
+      console.error("saveTxn: no authenticated user")
+      return
+    }
+
     if (!currentTxn || !currentTxn.id) {
       console.error("deleteTxn: no currentTxn or id")
       closeModal()
       return
     }
-    deleteDoc(doc(db, "txns", currentTxn.id)).then(() => {
+    deleteDoc(doc(db, "txns", "users", currentUser.uid, "dates", currentTxn.date, currentTxn.id)).then(() => {
       // console.log("deleted", currentTxn.id)
     })
     closeModal()
