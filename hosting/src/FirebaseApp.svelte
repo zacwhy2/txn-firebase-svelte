@@ -222,10 +222,32 @@
   <section class="section">
     <div class="container">
       <div class="block">
-        <div>
-          <button on:click={() => changeDate(-1)}>&lt;</button>
-          {currentDate}
-          <button on:click={() => changeDate(1)}>&gt;</button>
+        <div class="field has-addons is-align-items-center">
+          <p class="control">
+            <button on:click={() => changeDate(-1)} class="button is-light" aria-label="Previous day">
+              <span class="icon">
+                <i class="fas fa-chevron-left"></i>
+              </span>
+            </button>
+          </p>
+
+          <p class="control is-expanded">
+            <input
+              type="date"
+              bind:value={currentDate}
+              on:change={() => { if (currentUser) subscribeToDate(currentDate) }}
+              class="input"
+              aria-label="Select date"
+            />
+          </p>
+
+          <p class="control">
+            <button on:click={() => changeDate(1)} class="button is-light" aria-label="Next day">
+              <span class="icon">
+                <i class="fas fa-chevron-right"></i>
+              </span>
+            </button>
+          </p>
         </div>
       </div>
       {#each txns as txn}
