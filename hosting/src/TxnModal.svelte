@@ -119,21 +119,23 @@
         </div>
       </section>
       <footer class="modal-card-foot">
+
         <button on:click={saveTxn} class="button is-success">
           <span class="icon is-small">
             <i class="fas fa-check"></i>
           </span>
           <span>Save</span>
         </button>
-        <button on:click={closeModal} class="button">Cancel</button>
+
         {#if currentTxn.id}
-          <button on:click={deleteTxn} class="button is-danger is-outlined">
+          <button on:click={deleteTxn} class="button is-danger is-outlined ml-auto">
             <span>Delete</span>
             <span class="icon is-small">
               <i class="fas fa-times"></i>
             </span>
           </button>
         {/if}
+
       </footer>
     </div>
   </div>
