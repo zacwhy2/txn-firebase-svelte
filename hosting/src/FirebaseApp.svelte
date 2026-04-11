@@ -32,6 +32,7 @@
   let currentUser: User | null = null
   let currentDate = new Date().toLocaleDateString('en-CA')
   let currentTxn: Txn | null = null
+  let currentTxnOriginalDate: string | null = null
   let isModalOpen = false
   let isOptionsModalOpen = false
   let txns: Txn[] = []
@@ -121,6 +122,7 @@
 
   function editTxn(txn: Txn) {
     currentTxn = txn
+    currentTxnOriginalDate = txn.date
     openModal()
   }
 
@@ -143,26 +145,41 @@
     }
     const uid = currentUser.uid
 
+    const txnData = {
+      date: currentTxn.date,
+      amount: currentTxn.amount,
+      from: currentTxn.from,
+      to: currentTxn.to,
+      description: currentTxn.description,
+    }
+
     if (!currentTxn.id) { // new txn
-      addDoc(collection(db, "txns", "users", uid, "dates", currentTxn.date), {
-        date: currentTxn.date,
-        amount: currentTxn.amount,
-        from: currentTxn.from,
-        to: currentTxn.to,
-        description: currentTxn.description,
-      }).then(docRef => {
-        console.log("Document written with ID: ", docRef.id)
-      })
+      addDoc(collection(db, "txns", "users", uid, "dates", currentTxn.date), txnData)
+        .then(docRef => {
+          console.log("Document written with ID: ", docRef.id)
+        })
     } else { // existing txn
-      setDoc(doc(db, "txns", "users", uid, "dates", currentTxn.date, currentTxn.id), {
-        date: currentTxn.date,
-        amount: currentTxn.amount,
-        from: currentTxn.from,
-        to: currentTxn.to,
-        description: currentTxn.description,
-      }).then(() => {
-        // console.log("edited", currentTxn.id)
-      })
+      const oldDate = currentTxnOriginalDate
+      const newDate = currentTxn.date
+      const newDocRef = doc(db, "txns", "users", uid, "dates", newDate, currentTxn.id)
+
+      if (oldDate !== newDate) {
+        setDoc(newDocRef, txnData)
+          .then(() => {
+            return deleteDoc(doc(db, "txns", "users", uid, "dates", oldDate, currentTxn.id))
+          })
+          .then(() => {
+            console.log(`Document moved from ${oldDate} to ${newDate}`)
+          })
+          .catch(error => {
+            console.error("Error moving transaction document:", error)
+          })
+      } else {
+        setDoc(newDocRef, txnData)
+          .then(() => {
+            // console.log("edited", currentTxn.id)
+          })
+      }
     }
     closeModal()
   }
@@ -190,6 +207,7 @@
 
   function closeModal() {
     errors.reset()
+    currentTxnOriginalDate = null
     isModalOpen = false
   }
 
